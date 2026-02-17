@@ -1,12 +1,21 @@
 import socket
+import json
 
 c = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-c.connect(("localhost", 12345))
+c.connect(("100.86.253.5", 12345))
 
 mess = c.recv(1024).decode()
 
 if mess == "y":
-    run = True
+    usr = input("Enter your username: ")
+    pas = input("Enter your password: ")
+    auth = {"username": usr, "password": pas}
+    c.send(json.dumps(auth).encode())
+    mess2 = c.recv(1024).decode()
+    if mess2 == True:
+        run = True
+    else:
+        run = False
 else:
     run = False
 

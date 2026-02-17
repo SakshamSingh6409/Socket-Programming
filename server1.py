@@ -3,7 +3,7 @@ import select
 
 # Create server socket
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.bind(("localhost", 12345))
+s.bind(("100.86.253.5", 12345))
 s.listen(5)
 
 print("Server listening...")

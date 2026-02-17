@@ -1,7 +1,7 @@
 import socket
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.bind(("localhost", 12345))
+s.bind(("100.86.253.5", 12345))
 s.listen(5)
 
 print("Server listening...")
@@ -17,6 +17,9 @@ while run:
         if not x:
             break
         print("Received:", x)
+        auth = json.load(x)
+        print("Username: ", auth["username"])
+        print("password: ", auth["password"])
         if x == "0":
             run = False
             break
