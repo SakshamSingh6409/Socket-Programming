@@ -16,28 +16,25 @@ while run:
     print("Connected to:", addr)
     c.send('y'.encode())
 
-    while True:
-        auth = json.loads(c.recv(1024).decode())
+    auth = json.loads(c.recv(1024).decode())
 
-        if not auth:
-            break
+    if not auth:
+        break
 
-        print("Authentication Received")
+    print("Authentication Received")
 
-        if auth["username"] in valid_users:
-            c.send(json.dumps(True).encode())
-            while True:
-                mess = c.recv(1024).decode()
-                print("Received: ", mess)
+    if auth["username"] in valid_users:
+        c.send(json.dumps(True).encode())
+        while True:
+            mess = c.recv(1024).decode()
+            print("Received: ", mess)
 
-                if mess == "0":
-                    run = False
-                    break
-        else:
-            print("Invalid User")
-            c.send(json.dumps(False).encode())
-
-
+            if mess == "0":
+                run = False
+                break
+    else:
+        print("Invalid User")
+        c.send(json.dumps(False).encode())
 
     c.close()
 
