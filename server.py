@@ -27,7 +27,7 @@ while run:
         if auth["username"] in valid_users:
             c.send(json.dumps(True).encode())
             while True:
-                mess = recv(1024).decode()
+                mess = c.recv(1024).decode()
                 print("Received: ", mess)
 
                 if mess == "0":
