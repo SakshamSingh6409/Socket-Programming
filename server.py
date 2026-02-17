@@ -18,7 +18,7 @@ while run:
         if not x:
             break
         print("Received:", x)
-        auth = json.load(x)
+        auth = json.loads(x)
         print("Username: ", auth["username"])
         print("password: ", auth["password"])
         if x == "0":
