@@ -11,7 +11,7 @@ if mess == "y":
     pas = input("Enter your password: ")
     auth = {"username": usr, "password": pas}
     c.send(json.dumps(auth).encode())
-    mess2 = c.recv(1024).decode()
+    mess2 = json.loads(c.recv(1024).decode())
     if mess2 == True:
         run = True
     else:
