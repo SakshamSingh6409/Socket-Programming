@@ -15,6 +15,7 @@ if mess == "y":
     if mess2 == True:
         run = True
     else:
+        print("Rejected by Server")
         run = False
 else:
     run = False

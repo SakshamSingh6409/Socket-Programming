@@ -33,6 +33,11 @@ while run:
                 if mess == "0":
                     run = False
                     break
+        else:
+            print("Invalid User")
+            c.send(json.dumps(False).encode())
+
+
 
     c.close()
 
