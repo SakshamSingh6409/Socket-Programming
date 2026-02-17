@@ -8,6 +8,8 @@ s.listen(5)
 
 print("Server listening...")
 
+valid_users = ["saksham"]
+
 run = True
 while run:
     c, addr = s.accept()
@@ -22,7 +24,7 @@ while run:
 
         print("Authentication Received")
 
-        if auth["username"] in username:
+        if auth["username"] in valid_users:
             c.send(json.dumps(True).encode())
             while True:
                 mess = ercv(1024).decode()
