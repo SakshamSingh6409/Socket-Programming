@@ -40,8 +40,8 @@ def handle_client(c, addr):
         username = auth.get("username")
         password = auth.get("password")  # not used here, but you can validate
 
-        clients[c]["username"client_id] = username
-        clients[c]["clearance"] = valid_users.get(username, "none")
+        clients[client_id]["username"] = username
+        clients[client_id]["clearance"] = valid_users.get(username, "none")
 
         print(f"Authentication received from {client_id} ({username})")
 
