@@ -29,7 +29,7 @@ def handle_client(c, addr):
             "login_time": datetime.now()
         }
 
-    print(clirnts)
+    print(clients)
 
     print(f"{client_id} connected from {addr}")
     c.send('y'.encode())
