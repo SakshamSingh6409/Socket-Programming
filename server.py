@@ -1,6 +1,7 @@
 import socket
 import json
 
+valid_users = ["saksham"]
 
 def user_H(c, addr):
     print("Connected to:", addr)
@@ -34,8 +35,6 @@ def main():
     s.listen(5)
 
     print("Server listening...")
-
-    valid_users = ["saksham"]
 
     run = True
     while run:
