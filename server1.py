@@ -40,7 +40,7 @@ def handle_client(c, addr):
         username = auth.get("username")
         password = auth.get("password")  # not used here, but you can validate
 
-        clients[c]["username"] = username
+        clients[c]["username"client_id] = username
         clients[c]["clearance"] = valid_users.get(username, "none")
 
         print(f"Authentication received from {client_id} ({username})")
@@ -64,7 +64,7 @@ def handle_client(c, addr):
 
     finally:
         logout_time = datetime.now()
-        login_time = clients[c]["login_time"]
+        login_time = clients[]["login_time"]
         duration = logout_time - login_time
         print(f"{clients[c]['id']} ({clients[c]['username']}) disconnected after {duration}")
         c.close()
