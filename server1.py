@@ -64,7 +64,7 @@ def handle_client(c, addr):
 
     finally:
         logout_time = datetime.now()
-        login_time = clients[]["login_time"]
+        login_time = clients[client_id]["login_time"]
         duration = logout_time - login_time
         print(f"{clients[c]['id']} ({clients[c]['username']}) disconnected after {duration}")
         c.close()
