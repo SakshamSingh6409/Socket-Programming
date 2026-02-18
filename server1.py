@@ -70,7 +70,7 @@ def handle_client(c, addr):
         print(f"{clients[client_id]['id']} ({clients[client_id]['username']}) disconnected after {duration}")
         c.close()
         with lock:
-            del clients[c]
+            del clients[client_id]
 
 def main():
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
