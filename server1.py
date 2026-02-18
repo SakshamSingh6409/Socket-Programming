@@ -1,50 +1,90 @@
 import socket
-import select
+import json
+import threading
+from datetime import datetime
 
-# Create server socket
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.bind(("100.86.253.5", 12345))
-s.listen(5)
+# Valid users and their clearance levels
+valid_users = {
+    "saksham": "admin",
+    "guest": "low"
+}
 
-print("Server listening...")
+# Track connected clients
+clients = {}
+client_counter = 0
+lock = threading.Lock()  # to safely update shared data
 
-clients = []  # list to store client sockets
-run = True
+def handle_client(c, addr):
+    global client_counter
 
-while run:
-    # Monitor server socket + all client sockets
-    readable, _, _ = select.select([s] + clients, [], [])
+    # Assign unique client ID
+    with lock:
+        client_counter += 1
+        client_id = f"c{client_counter}"
+        clients[c] = {
+            "id": client_id,
+            "addr": addr,
+            "username": None,
+            "clearance": None,
+            "login_time": datetime.now()
+        }
 
-    for sock in readable:
-        if sock is s:
-            # New client connection
-            c, addr = s.accept()
-            print("Connected to:", addr)
-            c.send('y'.encode())
-            clients.append(c)
+    print(f"{client_id} connected from {addr}")
+    c.send('y'.encode())
+
+    try:
+        # Authentication
+        auth = json.loads(c.recv(1024).decode())
+        username = auth.get("username")
+        password = auth.get("password")  # not used here, but you can validate
+
+        clients[c]["username"] = username
+        clients[c]["clearance"] = valid_users.get(username, "none")
+
+        print(f"Authentication received from {client_id} ({username})")
+
+        if username in valid_users:
+            c.send(json.dumps(True).encode())
+            while True:
+                mess = c.recv(1024).decode()
+                if not mess:
+                    break
+                print(f"[{client_id} | {username}] {mess}")
+                if mess == "0":
+                    print(f"{client_id} ({username}) requested disconnect")
+                    break
         else:
-            # Existing client sent data
-            data = sock.recv(1024).decode()
-            if not data:
-                # Client disconnected
-                print("Client disconnected")
-                clients.remove(sock)
-                sock.close()
-                continue
+            print(f"{client_id} invalid user: {username}")
+            c.send(json.dumps(False).encode())
 
-            print("Received:", data)
+    except Exception as e:
+        print(f"Error with {client_id}: {e}")
 
-            if data == "0":
-                run = False
-                break
+    finally:
+        logout_time = datetime.now()
+        login_time = clients[c]["login_time"]
+        duration = logout_time - login_time
+        print(f"{clients[c]['id']} ({clients[c]['username']}) disconnected after {duration}")
+        c.close()
+        with lock:
+            del clients[c]
 
-            # Broadcast to all clients
-            for c in clients:
-                if c is not sock:  # don’t echo back to sender
-                    c.sendall(f"Broadcast: {data}".encode())
+def main():
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    s.bind(("100.86.253.5", 12345))
+    s.listen(5)
 
-# Cleanup
-for c in clients:
-    c.close()
-s.close()
-print("Server stopped.")
+    print("Server listening...")
+
+    try:
+        while True:
+            c, addr = s.accept()
+            threading.Thread(target=handle_client, args=(c, addr), daemon=True).start()
+    except KeyboardInterrupt:
+        print("Server shutting down...")
+    finally:
+        s.close()
+
+if __name__ == "__main__":
+    main()
