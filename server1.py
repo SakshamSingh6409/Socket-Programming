@@ -69,14 +69,15 @@ def handle_client(c, addr):
         duration = logout_time - login_time
         print(f"{clients[client_id]['id']} ({clients[client_id]['username']}) disconnected after {duration}")
         c.close()
+        '''
         with lock:
-            del clients[client_id]
+            del clients[client_id]'''
 
 def main():
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.bind(("100.86.253.5", 12345))
-    s.listen(5)
+    s.listen(4000000000)
 
     print("Server listening...")
 
