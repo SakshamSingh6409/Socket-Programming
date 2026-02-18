@@ -35,7 +35,8 @@ def main():
     s.listen(5)
 
     print("Server listening...")
-
+    
+    global run
     run = True
     while run:
         c, addr = s.accept()
