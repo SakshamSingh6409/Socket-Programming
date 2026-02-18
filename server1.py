@@ -22,6 +22,7 @@ def handle_client(c, addr):
         client_counter += 1
         client_id = f"c{client_counter}"
         clients[client_id] = {
+            "id": client_id,
             "socket": c,
             "addr": addr,
             "username": None,
