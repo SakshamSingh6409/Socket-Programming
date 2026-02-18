@@ -17,7 +17,8 @@ def user_H(c, addr):
             print("Received: ", mess)
 
             if mess == "0":
-                global run = False
+                global run
+                run = False
                 break
     else:
         print("Invalid User")
