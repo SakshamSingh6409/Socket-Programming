@@ -21,13 +21,15 @@ def handle_client(c, addr):
     with lock:
         client_counter += 1
         client_id = f"c{client_counter}"
-        clients[c] = {
-            "id": client_id,
+        clients[client_id] = {
+            "socket": c,
             "addr": addr,
             "username": None,
             "clearance": None,
             "login_time": datetime.now()
         }
+
+    print(clirnts)
 
     print(f"{client_id} connected from {addr}")
     c.send('y'.encode())
