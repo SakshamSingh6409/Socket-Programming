@@ -1,26 +1,13 @@
 import socket
 import json
 
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-s.bind(("100.86.253.5", 12345))
-s.listen(5)
 
-print("Server listening...")
-
-valid_users = ["saksham"]
-
-run = True
-while run:
-    c, addr = s.accept()
+def user_H(c, addr):
     print("Connected to:", addr)
     c.send('y'.encode())
 
     auth = json.loads(c.recv(1024).decode())
-
-    if not auth:
-        break
-
+    
     print("Authentication Received")
 
     if auth["username"] in valid_users:
@@ -38,5 +25,19 @@ while run:
 
     c.close()
 
+
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+s.bind(("100.86.253.5", 12345))
+s.listen(5)
+
+print("Server listening...")
+
+valid_users = ["saksham"]
+
+run = True
+while run:
+    c, addr = s.accept()
+    user_H(c, addr)
 s.close()
 print("Server stopped.")
