@@ -40,7 +40,7 @@ def main():
     run = True
     while run:
         c, addr = s.accept()
-        user_H(c, addr)
+        threading.Thread(target=user_H, args=(c, addr)).start()
 
     s.close()
     print("Server stopped.")
