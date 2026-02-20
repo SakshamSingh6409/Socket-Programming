@@ -30,7 +30,7 @@ def get_D():
         print(rows)
 
 def write_D():
-user_data = {
+    user_data = {
     "Employee_ID": 1,
     "First_Name": "Saksham",
     "Last_Name": "Singh",
@@ -39,23 +39,23 @@ user_data = {
     "Username": "saksham",
     "Password": "123",
     "Status": "Active"
-}
+    }
 
-# Connect to the database
-conn = sqlite3.connect("database.db")
-cursor = conn.cursor()
+    # Connect to the database
+    conn = sqlite3.connect("database.db")
+    cursor = conn.cursor()
 
-# Build the SQL dynamically from dictionary keys
-columns = ", ".join(user_data.keys())
-placeholders = ", ".join(["?"] * len(user_data))
-sql = f"INSERT INTO Credentials ({columns}) VALUES ({placeholders})"
+    # Build the SQL dynamically from dictionary keys
+    columns = ", ".join(user_data.keys())
+    placeholders = ", ".join(["?"] * len(user_data))
+    sql = f"INSERT INTO Credentials ({columns}) VALUES ({placeholders})"
 
-# Execute with values from the dictionary
-cursor.execute(sql, tuple(user_data.values()))
+    # Execute with values from the dictionary
+    cursor.execute(sql, tuple(user_data.values()))
 
-# Commit and close
-conn.commit()
-conn.close()
+    # Commit and close
+    conn.commit()
+    conn.close()
 
 def handle_C(c, addr):
     global client_counter
