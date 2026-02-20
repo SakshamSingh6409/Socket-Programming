@@ -8,12 +8,12 @@ def add_D(c):
     print("\t\t\tEmployee Credentials [Enter 0]")
     print("\t\t\tCompany Database [Enter 1]")
     
-    res = int(input("Your responce: "))
-    if res == 0:
+    res = input("Your responce: ")
+    if res == "0":
         write_D_Cred(c)
         c.send(res.encode())
 
-    if res == 1:
+    if res == "1":
         wirte_D_Comp(c)
         c.send(res.encode())
 

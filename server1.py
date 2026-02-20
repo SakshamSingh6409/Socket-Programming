@@ -34,10 +34,10 @@ def get_D():
 def add_D(c):
     res = c.recv(1024).decode()
     
-    if res == 0:
+    if res == "0":
         write_D_Cred()
 
-    if res == 1:
+    if res == "1":
         wirte_D_Comp()
 
 
