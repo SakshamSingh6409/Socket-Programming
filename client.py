@@ -35,7 +35,7 @@ def write_D_Cred(c):
         "Role": Role,
         "Username": Username,
         "Password": Password,
-        "Status": Status
+        "Status": "Active"
     }
 
     c.send(json.dumps(employee_data).encode())

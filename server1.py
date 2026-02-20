@@ -89,6 +89,7 @@ def handle_C(c, addr):
             "socket": c,
             "addr": addr,
             "username": None,
+            "password": None,
             "clearance": None,
             "login_time": datetime.now()
         }
@@ -96,13 +97,15 @@ def handle_C(c, addr):
     print(clients)
     print(f"{client_id} connected from {addr}")
     c.send('y'.encode())
-
+    print("saksham")
+    
     try:
         auth = json.loads(c.recv(1024).decode())
         username = auth.get("username")
         password = auth.get("password")
 
         clients[client_id]["username"] = username
+        clients[client_id]["password"] = password
         clients[client_id]["clearance"] = valid_users.get(username, "none")
 
         print(f"Authentication received from {client_id} ({username})")
