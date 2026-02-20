@@ -1,22 +1,18 @@
 import socket
 import json
 
-
-
 def add_D(c):
     print("which data do you want to add")
     print("\t\t\tEmployee Credentials [Enter 0]")
     print("\t\t\tCompany Database [Enter 1]")
-    
-    res = input("Your responce: ")
+
+    res = input("Your response: ")
+    c.send(res.encode())  # send choice first
+
     if res == "0":
         write_D_Cred(c)
-        c.send(res.encode())
-
-    if res == "1":
-        wirte_D_Comp(c)
-        c.send(res.encode())
-
+    elif res == "1":
+        write_D_Comp(c)
 
 
 def write_D_Comp(c):
@@ -33,16 +29,20 @@ def write_D_Cred(c):
     Status = input("What is the status: ")
 
     employee_data = {
-    "First_Name": First_Name,
-    "Last_Name": Last_Name,
-    "Branch": Branch,
-    "Role": Role,
-    "Username": Username,
-    "Password": Password,
-    "Status": Status
+        "First_Name": First_Name,
+        "Last_Name": Last_Name,
+        "Branch": Branch,
+        "Role": Role,
+        "Username": Username,
+        "Password": Password,
+        "Status": Status
     }
 
     c.send(json.dumps(employee_data).encode())
+    # Optionally wait for server confirmation
+    response = c.recv(1024).decode()
+    print("Server response:", response)
+
 
 def main():
     c = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -65,15 +65,14 @@ def main():
         run = False
 
     while run:
-        x = input("Enter anything [0 to exit]: ")
-        
+        x = input("Enter anything [Disconnect to exit]: ")
         c.send(x.encode())
 
         if x == "Disconnect":
             run = False
         elif x == "add_D":
             add_D(c)
-        
+
     c.close()
     print("Client stopped.")
 

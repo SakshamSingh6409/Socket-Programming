@@ -19,20 +19,17 @@ lock = threading.Lock()  # to safely update shared data
 def get_D():
     conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
-
     cursor.execute("SELECT * FROM Credentials")
     rows = cursor.fetchall()
-
     column_name = [description[0] for description in cursor.description]
     print(column_name)
     for row in rows:
         print(row)
-
     conn.close()
 
 
 def add_D(c):
-    res = c.recv(1024).decode()
+    res = c.recv(1024).decode()  # receive choice: "0" or "1"
     if res == "0":
         write_D_Cred(c)
     elif res == "1":
@@ -50,23 +47,31 @@ def write_D_Cred(c):
 
     try:
         user_data = json.loads(c.recv(1024).decode())
+        print("Received user_data:", user_data)  # debug
     except Exception as e:
         print(f"Error receiving user data: {e}")
         c.send(json.dumps({"error": "Invalid data"}).encode())
         conn.close()
         return
 
-    # Build SQL dynamically from dictionary keys
-    columns = ", ".join(user_data.keys())
-    placeholders = ", ".join(["?"] * len(user_data))
-    sql = f"INSERT INTO Credentials ({columns}) VALUES ({placeholders})"
+    sql = """INSERT INTO Credentials 
+             (First_Name, Last_Name, Branch, Role, Username, Password, Status)
+             VALUES (?, ?, ?, ?, ?, ?, ?)"""
 
     try:
-        cursor.execute(sql, tuple(user_data.values()))
+        cursor.execute(sql, (
+            user_data["First_Name"],
+            user_data["Last_Name"],
+            user_data["Branch"],
+            user_data["Role"],
+            user_data["Username"],
+            user_data["Password"],
+            user_data["Status"]
+        ))
         conn.commit()
-        # Return the new auto-incremented Employee_ID
         new_id = cursor.lastrowid
         c.send(json.dumps({"success": True, "Employee_ID": new_id}).encode())
+        print(f"Inserted row with Employee_ID {new_id}")
     except Exception as e:
         print(f"Error inserting data: {e}")
         c.send(json.dumps({"error": "Database insert failed"}).encode())
@@ -76,8 +81,6 @@ def write_D_Cred(c):
 
 def handle_C(c, addr):
     global client_counter
-
-    # Assign unique client ID
     with lock:
         client_counter += 1
         client_id = f"c{client_counter}"
@@ -95,10 +98,9 @@ def handle_C(c, addr):
     c.send('y'.encode())
 
     try:
-        # Authentication
         auth = json.loads(c.recv(1024).decode())
         username = auth.get("username")
-        password = auth.get("password")  # not used here, but you can validate
+        password = auth.get("password")
 
         clients[client_id]["username"] = username
         clients[client_id]["clearance"] = valid_users.get(username, "none")
