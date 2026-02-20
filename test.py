@@ -6,7 +6,7 @@ cursor = conn.cursor()
 
 cursor.execute("""
     SELECT Branch, Role, Employee_ID, First_Name, Last_Name, Username
-    FROM Employees
+    FROM Credentials
     WHERE Status = 'Active'
     ORDER BY Branch, Role;
 """)
