@@ -2,6 +2,8 @@ import socket
 import json
 import threading
 from datetime import datetime
+import sqlite3
+
 
 # Valid users and their clearance levels
 valid_users = {
