@@ -58,33 +58,18 @@ def write_D_Cred():
     row_count = cursor.fetchone()[0]
 
     Employee_ID = row_count + 1
-    First_Name = input("Enter First Name: ")
-    Last_Name = input("Enter Last Name: ")
-    Branch = input("Branch of Employee: ")
-    Role = input("Enter Role of Employee: ")
-    Username = input("Username: ")
-    Password = input("Password: ")
-    Status = input("What is the status: ")
+    
+    user_data = json.loads(c.recv(1024).decode())
 
-    user_data = {
-    "Employee_ID": Employee_ID,
-    "First_Name": First_Name,
-    "Last_Name": Last_Name,
-    "Branch": Branch,
-    "Role": Role,
-    "Username": Username,
-    "Password": Password,
-    "Status": Status
-    }
-
-   
     # Build the SQL dynamically from dictionary keys
-    columns = ", ".join(user_data.keys())
-    placeholders = ", ".join(["?"] * len(user_data))
+    columns = "Employee_ID, " + ", ".join(user_data.keys())
+    placeholders = "?, " + ", ".join(["?"] * len(user_data))
     sql = f"INSERT INTO Credentials ({columns}) VALUES ({placeholders})"
+    
+    values = (employee_id,) + tuple(user_data.values())
 
     # Execute with values from the dictionary
-    cursor.execute(sql, tuple(user_data.values()))
+    cursor.execute(sql, values))
 
     # Commit and close
     conn.commit()
