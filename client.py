@@ -69,7 +69,7 @@ def main():
         
         c.send(x.encode())
 
-        if x == "0":
+        if x == "Disconnect":
             run = False
         elif x == "add_D":
             add_D(c)

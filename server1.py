@@ -114,7 +114,7 @@ def handle_C(c, addr):
 
                 if mess == "add_D":
                     add_D(c)
-                elif mess == "0":
+                elif mess == "Disconnect":
                     print(f"{client_id} ({username}) requested disconnect")
                     break
                 else:
