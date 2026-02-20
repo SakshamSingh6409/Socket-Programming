@@ -65,7 +65,7 @@ def main():
         run = False
 
     while run:
-        x = input("Enter anything [Disconnect to exit]: ")
+        x = input("Enter anything [Type 'Disconnect' to exit]: ")
         c.send(x.encode())
 
         if x == "Disconnect":

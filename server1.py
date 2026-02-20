@@ -74,7 +74,7 @@ def write_D_Cred(c):
         print(f"Inserted row with Employee_ID {new_id}")
     except Exception as e:
         print(f"Error inserting data: {e}")
-        c.send(json.dumps({"error": "Database insert failed"}).encode())
+        c.send(json.dumps({"error": e}).encode())
     finally:
         conn.close()
 
