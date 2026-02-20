@@ -69,7 +69,7 @@ def write_D_Cred():
     values = (employee_id,) + tuple(user_data.values())
 
     # Execute with values from the dictionary
-    cursor.execute(sql, values))
+    cursor.execute(sql, values)
 
     # Commit and close
     conn.commit()
