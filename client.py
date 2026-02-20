@@ -11,9 +11,11 @@ def add_D():
     res = int(input("Your responce: "))
     if res == 0:
         write_D_Cred()
+        c.send(res.encode())
 
     if res == 1:
         wirte_D_Comp()
+        c.send(res.encode())
 
 
 
@@ -76,5 +78,5 @@ def main():
     print("Client stopped.")
 
 
-if __name__ = "__main__":
+if __name__ == "__main__":
     main()

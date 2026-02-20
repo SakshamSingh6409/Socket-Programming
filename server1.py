@@ -32,11 +32,8 @@ def get_D():
         print(rows)
 
 def add_D():
-    print("which data do you want to add")
-    print("\t\t\tEmployee Credentials [Enter 0]")
-    print("\t\t\tCompany Database [Enter 1]")
+    res = c.recv(1024).decode()
     
-    res = int(input("Your responce: "))
     if res == 0:
         write_D_Cred()
 
