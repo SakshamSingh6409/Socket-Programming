@@ -3,27 +3,27 @@ import json
 
 
 
-def add_D():
+def add_D(c):
     print("which data do you want to add")
     print("\t\t\tEmployee Credentials [Enter 0]")
     print("\t\t\tCompany Database [Enter 1]")
     
     res = int(input("Your responce: "))
     if res == 0:
-        write_D_Cred()
+        write_D_Cred(c)
         c.send(res.encode())
 
     if res == 1:
-        wirte_D_Comp()
+        wirte_D_Comp(c)
         c.send(res.encode())
 
 
 
-def write_D_Comp():
+def write_D_Comp(c):
     pass
 
 
-def write_D_Cred():
+def write_D_Cred(c):
     First_Name = input("Enter First Name: ")
     Last_Name = input("Enter Last Name: ")
     Branch = input("Branch of Employee: ")
@@ -72,7 +72,7 @@ def main():
         if x == "0":
             run = False
         elif x == "add_D":
-            add_D()
+            add_D(c)
         
     c.close()
     print("Client stopped.")

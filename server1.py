@@ -31,7 +31,7 @@ def get_D():
     for row in rows:
         print(rows)
 
-def add_D():
+def add_D(c):
     res = c.recv(1024).decode()
     
     if res == 0:
@@ -42,11 +42,11 @@ def add_D():
 
 
 
-def write_D_Comp():
+def write_D_Comp(c):
     pass
 
 
-def write_D_Cred():
+def write_D_Cred(c):
 
     
     conn = sqlite3.connect("database.db")
@@ -112,7 +112,7 @@ def handle_C(c, addr):
                     break
 
                 if mess == "add_D":
-                    add_D()
+                    add_D(c)
                 print(f"[{client_id} | {username}] {mess}")
                 if mess == "0":
                     print(f"{client_id} ({username}) requested disconnect")
