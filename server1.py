@@ -56,8 +56,6 @@ def write_D_Cred():
     cursor = conn.cursor()
     cursor.execute("SELECT COUNT(*) FROM Credentials")
     row_count = cursor.fetchone()[0]
-    conn.close()
-
 
     Employee_ID = row_count + 1
     First_Name = input("Enter First Name: ")
@@ -79,10 +77,7 @@ def write_D_Cred():
     "Status": Status
     }
 
-    # Connect to the database
-    conn = sqlite3.connect("database.db")
-    cursor = conn.cursor()
-
+   
     # Build the SQL dynamically from dictionary keys
     columns = ", ".join(user_data.keys())
     placeholders = ", ".join(["?"] * len(user_data))
