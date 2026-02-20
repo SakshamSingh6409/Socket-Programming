@@ -1,7 +1,7 @@
 import sqlite3
 from collections import defaultdict
 
-conn = sqlite3.connect("company.db")
+conn = sqlite3.connect("database.db")
 cursor = conn.cursor()
 
 cursor.execute("""
