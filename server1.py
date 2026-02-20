@@ -14,7 +14,50 @@ clients = {}
 client_counter = 0
 lock = threading.Lock()  # to safely update shared data
 
-def handle_client(c, addr):
+
+def get_D():
+    conn = sqlite3.connect("database.db")
+    curor = conn.cursor()
+
+    cursor.execute("SELECT * FROM credentials")
+
+    rows  = cursor.fetchall()
+
+    column_name = [description[0] for description in cursor.description]
+
+    print(column_name)
+    for row in rows:
+        print(rows)
+
+def write_D():
+user_data = {
+    "Employee_ID": 1,
+    "First_Name": "Saksham",
+    "Last_Name": "Singh",
+    "Branch": "admin",
+    "Role": "admin",
+    "Username": "saksham",
+    "Password": "123",
+    "Status": "Active"
+}
+
+# Connect to the database
+conn = sqlite3.connect("database.db")
+cursor = conn.cursor()
+
+# Build the SQL dynamically from dictionary keys
+columns = ", ".join(user_data.keys())
+placeholders = ", ".join(["?"] * len(user_data))
+sql = f"INSERT INTO Credentials ({columns}) VALUES ({placeholders})"
+
+# Execute with values from the dictionary
+cursor.execute(sql, tuple(user_data.values()))
+
+# Commit and close
+conn.commit()
+conn.close()
+
+def handle_C(c, addr):
     global client_counter
 
     # Assign unique client ID
@@ -52,6 +95,9 @@ def handle_client(c, addr):
                 mess = c.recv(1024).decode()
                 if not mess:
                     break
+
+                if mess == "add_D":
+                    write_D()
                 print(f"[{client_id} | {username}] {mess}")
                 if mess == "0":
                     print(f"{client_id} ({username}) requested disconnect")
@@ -76,15 +122,15 @@ def handle_client(c, addr):
 def main():
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    s.bind(("100.86.253.5", 12345))
-    s.listen(4000000000)
+    s.bind(("100.86.9.4", 12345))
+    s.listen(4000)
 
     print("Server listening...")
 
     try:
         while True:
             c, addr = s.accept()
-            threading.Thread(target=handle_client, args=(c, addr), daemon=True).start()
+            threading.Thread(target=handle_C, args=(c, addr), daemon=True).start()
     except KeyboardInterrupt:
         print("Server shutting down...")
     finally:
