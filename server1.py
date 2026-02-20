@@ -31,16 +31,52 @@ def get_D():
     for row in rows:
         print(rows)
 
-def write_D():
+def add_D():
+    print("which data do you want to add")
+    print("\t\t\tEmployee Credentials [Enter 0]")
+    print("\t\t\tCompany Database [Enter 1]")
+    
+    res = int(input("Your responce: "))
+    if res == 0:
+        write_D_Cred()
+
+    if res == 1:
+        wirte_D_Comp()
+
+
+
+def write_D_Comp():
+    pass
+
+
+def write_D_Cred():
+
+    
+    conn = sqlite3.connect("database.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM Credentials")
+    row_count = cursor.fetchone()[0]
+    conn.close()
+
+
+    Employee_ID = row_count + 1
+    First_Name = input("Enter First Name: ")
+    Last_Name = input("Enter Last Name: ")
+    Branch = input("Branch of Employee: ")
+    Role = input("Enter Role of Employee: ")
+    Username = input("Username: ")
+    Password = input("Password: ")
+    Status = input("What is the status: ")
+
     user_data = {
-    "Employee_ID": 1,
-    "First_Name": "Saksham",
-    "Last_Name": "Singh",
-    "Branch": "admin",
-    "Role": "admin",
-    "Username": "saksham",
-    "Password": "123",
-    "Status": "Active"
+    "Employee_ID": Employee_ID,
+    "First_Name": First_Name,
+    "Last_Name": Last_Name,
+    "Branch": Branch,
+    "Role": Role,
+    "Username": Username,
+    "Password": Password,
+    "Status": Status
     }
 
     # Connect to the database
@@ -99,7 +135,7 @@ def handle_C(c, addr):
                     break
 
                 if mess == "add_D":
-                    write_D()
+                    add_D()
                 print(f"[{client_id} | {username}] {mess}")
                 if mess == "0":
                     print(f"{client_id} ({username}) requested disconnect")
