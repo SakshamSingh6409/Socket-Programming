@@ -41,7 +41,12 @@ def write_D_Cred(c):
     c.send(json.dumps(employee_data).encode())
     # Optionally wait for server confirmation
     response = c.recv(1024).decode()
-    print("Server response:", response)
+    resp = json.loads(response)
+    
+    if "success" in resp:
+        print(f"Employee added with ID {resp['Employee_ID']}")
+    else:
+        print(f"Error: {resp['error']}")
 
 
 def main():
