@@ -169,7 +169,7 @@ def handle_C(c, addr):
         errors[timestamp] = str(e)
 
     finally:
-        log(clients[client_id], commands, errors)  # <-- call logging here
+        log(clients[client_id], str(commands), errors)  # <-- call logging here
         c.close()
         with lock:
             del clients[client_id]
