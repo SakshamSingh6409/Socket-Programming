@@ -79,8 +79,14 @@ def write_D_Cred(c):
         conn.close()
 
 
+def log():
+    pass
+
 def handle_C(c, addr):
     global client_counter
+    commands = {}
+    errors = {}
+
     with lock:
         client_counter += 1
         client_id = f"c{client_counter}"
@@ -94,11 +100,6 @@ def handle_C(c, addr):
             "login_time": datetime.now()
         }
 
-    print(clients)
-    print(f"{client_id} connected from {addr}")
-    c.send('y'.encode())
-    print("saksham")
-    
     try:
         auth = json.loads(c.recv(1024).decode())
         username = auth.get("username")
@@ -108,8 +109,6 @@ def handle_C(c, addr):
         clients[client_id]["password"] = password
         clients[client_id]["clearance"] = valid_users.get(username, "none")
 
-        print(f"Authentication received from {client_id} ({username})")
-
         if username in valid_users:
             c.send(json.dumps(True).encode())
             while True:
@@ -117,28 +116,31 @@ def handle_C(c, addr):
                 if not mess:
                     break
 
+                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+                commands[timestamp] = mess
+
                 if mess == "add_D":
-                    add_D(c)
+                    try:
+                        add_D(c)
+                    except Exception as e:
+                        errors[timestamp] = str(e)
                 elif mess == "Disconnect":
-                    print(f"{client_id} ({username}) requested disconnect")
                     break
                 else:
                     print(f"[{client_id} | {username}] {mess}")
         else:
-            print(f"{client_id} invalid user: {username}")
             c.send(json.dumps(False).encode())
 
     except Exception as e:
-        print(f"Error with {client_id}: {e}")
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+        errors[timestamp] = str(e)
 
     finally:
-        logout_time = datetime.now()
-        login_time = clients[client_id]["login_time"]
-        duration = logout_time - login_time
-        print(f"{clients[client_id]['id']} ({clients[client_id]['username']}) disconnected after {duration}")
+        log(clients[client_id], commands, errors)  # <-- call logging here
         c.close()
         with lock:
             del clients[client_id]
+
 
 
 def main():
