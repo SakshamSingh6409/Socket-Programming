@@ -79,9 +79,29 @@ def write_D_Cred(c):
         conn.close()
 
 
-def log():
-    pass
+def log(client_info, commands, errors):
+    conn = sqlite3.connect("database.db")
+    cursor = conn.cursor()
 
+    # Prepare values
+    user = client_info["username"]
+    ip = client_info["addr"][0]
+    clearance = client_info["clearance"]
+    login_time = client_info["login_time"].strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+    logout_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+    duration = str(datetime.now() - client_info["login_time"])
+
+    # Convert dicts to JSON for storage
+    commands_json = json.dumps(commands, indent=2)
+    errors_json = json.dumps(errors, indent=2)
+
+    sql = """INSERT INTO Logs 
+             (User, IP, Clearance, Login_time, Logout_time, Duration, Commands, Errors)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)"""
+
+    cursor.execute(sql, (user, ip, clearance, login_time, logout_time, duration, commands_json, errors_json))
+    conn.commit()
+    conn.close()
 def handle_C(c, addr):
     global client_counter
     commands = {}
@@ -108,6 +128,11 @@ def handle_C(c, addr):
         clients[client_id]["username"] = username
         clients[client_id]["password"] = password
         clients[client_id]["clearance"] = valid_users.get(username, "none")
+
+
+    print(clients)
+    print(f"{client_id} connected from {addr}")
+    c.send('y'.encode())
 
         if username in valid_users:
             c.send(json.dumps(True).encode())
@@ -140,8 +165,6 @@ def handle_C(c, addr):
         c.close()
         with lock:
             del clients[client_id]
-
-
 
 def main():
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
