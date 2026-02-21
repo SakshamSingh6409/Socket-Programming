@@ -102,7 +102,7 @@ def write_D_Cred(c, employee_data):
 
 def main():
     c = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    c.connect(("localhost", 12345))
+    c.connect(("100.86.253.5", 12345))
 
     mess = c.recv(1024).decode()
 
