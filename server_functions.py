@@ -242,17 +242,21 @@ def table_to_nested_dict(db_file, table, role, branch):
 
 def verify_credentials(db_file, client_info):
     """Verify if username and password are valid."""
-    
-    data = table_to_nested_dict(db_file, "Credentials", "Admin", "Admin")  # Use admin role to read credentials
+    conn = sqlite3.connect(db_file)
+    cursor = conn.cursor()
+    cursor.execute("SELECT Username, Password, Role, Branch FROM Credentials WHERE Username = ?",
+                   (client_info["username"],))
+    row = cursor.fetchone()
+    conn.close()
 
-    for row in data.values():
-        if row["Username"] == client_info["username"]:
-            stored_hash = row["Password"]
-            if bcrypt.checkpw(client_info["password"].encode('utf-8'), stored_hash.encode('utf-8')):
-                client_info["role"] = row["Role"]
-                return True
-            else:
-                return False
+    if not row:
+        return False
+
+    username, stored_hash, role, branch = row
+    if bcrypt.checkpw(client_info["password"].encode('utf-8'), stored_hash.encode('utf-8')):
+        client_info["clearance"] = role   # <-- was "role", must be "clearance"
+        client_info["branch"] = branch    # <-- also sets branch, needed for commands
+        return True
     return False
 
 def handle_C(c, addr):
