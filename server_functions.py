@@ -241,14 +241,15 @@ def table_to_nested_dict(db_file, table, role, branch):
     conn.close()
     return nested_dict
 
-def verify_credentials(db_file, username, password):
+def verify_credentials(db_file, client_info):
     """Verify if username and password are valid."""
     data = table_to_nested_dict(db_file, "Credentials")
 
     for row in data.values():
-        if row["Username"] == username:
+        if row["Username"] == client_info["username"]:
             stored_hash = row["Password"]
-            if bcrypt.checkpw(password.encode('utf-8'), stored_hash.encode('utf-8')):
+            if bcrypt.checkpw(client_info["password"].encode('utf-8'), stored_hash.encode('utf-8')):
+                client_info["role"] = row["Role"]
                 return True
             else:
                 return False
@@ -285,9 +286,8 @@ def handle_C(c, addr):
 
         clients[client_id]["username"] = username
         clients[client_id]["password"] = password
-        clients[client_id]["clearance"] = valid_users.get(username, "none")
     
-        if verify_credentials(db_file, username, password):
+        if verify_credentials(db_file, clients[client_id]):
             c.send(json.dumps({"response": "True", "Client_Detail": clients[client_id]}).encode())
             while True:
                 mess = c.recv(1024).decode()
