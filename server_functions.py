@@ -286,12 +286,12 @@ def handle_C(c, addr):
 
         clients[client_id]["username"] = username
         clients[client_id]["password"] = password
-    
-        if verify_credentials(db_file, clients[client_id]):
-            client_copy = clients[client_id].copy()
-            client_copy.pop("socket", None)  # remove "socket" before sending to client
 
-            c.send(json.dumps({"response": "True"}).encode())
+        client_copy = clients[client_id].copy()
+        client_copy.pop("socket", None)  # remove "socket" before sending to client
+
+        if verify_credentials(db_file, clients[client_id]):
+            c.send(json.dumps({"response": "True", "Client_Detail": client_copy}).encode())
             while True:
                 mess = c.recv(1024).decode()
                 if not mess:
@@ -303,7 +303,7 @@ def handle_C(c, addr):
                 if process_command(mess, c, client_id, username, errors, timestamp):
                     break
         else:
-            c.send(json.dumps({"response": "False", "Client_Detail": clients[client_id]}).encode())
+            c.send(json.dumps({"response": "False", "Client_Detail": client_copy}).encode())
 
     except Exception as e:
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
