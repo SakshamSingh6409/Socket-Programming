@@ -26,24 +26,25 @@ def process_command(x, c, client_id, username, errors, timestamp):
             except Exception as e:
              c.send(json.dumps({"error": str(e)}).encode())
 
+        elif x == "get_table":
+            payload = json.loads(c.recv(4096).decode())
+            table = payload["table"]
+            role = clients[client_id]["clearance"]    # <-- add
+            branch = clients[client_id]["branch"]     # <-- add
+            data = table_to_nested_dict(db_file, table, role, branch)  # <-- pass them
+            c.send(json.dumps({"success": True, "data": data}).encode())
 
         elif x == "update_cell":
-            # Client sends: {"table": "Credentials", "target_column": "Status",
-            #                "new_value": "Inactive", "conditions": {"Username": "abc"}}
             payload = json.loads(c.recv(4096).decode())
+            role = clients[client_id]["clearance"]    # <-- add
+            branch = clients[client_id]["branch"]     # <-- add
             update_cell(db_file,
                         payload["table"],
                         payload["target_column"],
                         payload["new_value"],
-                        payload["conditions"])
+                        payload["conditions"],
+                        role, branch)                 # <-- pass them
             c.send(json.dumps({"success": True}).encode())
-
-        elif x == "get_table":
-            # Client sends: {"table": "Credentials"}
-            payload = json.loads(c.recv(4096).decode())
-            table = payload["table"]
-            data = table_to_nested_dict(db_file, table)
-            c.send(json.dumps({"success": True, "data": data}).encode())
 
         elif x == "Disconnect":
             return True  # Signal to disconnect
@@ -111,7 +112,7 @@ def write_D_Cred(c, db_file, role, branch):
 
     try:
         # Use insert_row() instead of hardcoded SQL
-        new_id = insert_row(db_file, "Credentials", user_data)
+        new_id = insert_row(db_file, "Credentials", user_data, role, branch)
         c.send(json.dumps({"success": True, "Employee_ID": new_id}).encode())
         print(f"Inserted row with Employee_ID {new_id}")
     except Exception as e:
