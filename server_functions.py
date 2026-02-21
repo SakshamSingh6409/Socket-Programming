@@ -291,7 +291,7 @@ def handle_C(c, addr):
             client_copy = clients[client_id].copy()
             client_copy.pop("socket", None)  # remove "socket" before sending to client
 
-            c.send(json.dumps({"response": "True", "Client_Detail": client_copy}).encode())
+            c.send(json.dumps({"response": "True"}).encode())
             while True:
                 mess = c.recv(1024).decode()
                 if not mess:
