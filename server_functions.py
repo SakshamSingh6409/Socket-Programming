@@ -243,7 +243,7 @@ def table_to_nested_dict(db_file, table, role, branch):
 
 def verify_credentials(db_file, client_info):
     """Verify if username and password are valid."""
-    data = table_to_nested_dict(db_file, "Credentials")
+    data = table_to_nested_dict(db_file, "Credentials", "Admin", "Admin")  # Use admin role to read credentials
 
     for row in data.values():
         if row["Username"] == client_info["username"]:
