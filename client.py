@@ -75,7 +75,7 @@ def update_cell_client(c, table, target_column, new_value, conditions):
 
 def get_table_client(c, table):
     payload = {"table": table}
-    c.send("get_table".encode())
+    #c.send("get_table".encode())
     c.send(json.dumps(payload).encode())
     resp = json.loads(c.recv(8192).decode())
     if "success" in resp:

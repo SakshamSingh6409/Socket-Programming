@@ -274,7 +274,6 @@ def handle_C(c, addr):
             "login_time": datetime.now()
         }
 
-    print(clients)
     print(f"{client_id} connected from {addr}")
     c.send('y'.encode())
     
@@ -295,7 +294,7 @@ def handle_C(c, addr):
             client_copy = clients[client_id].copy()
             client_copy.pop("socket", None)  # remove "socket" before sending to client
             client_copy.pop("login_time", None) # remove "login_time" before sending to client
-
+            print(clients)
             c.send(json.dumps({"response": "True", "Client_Detail": client_copy}).encode())
             while True:
                 mess = c.recv(1024).decode()
