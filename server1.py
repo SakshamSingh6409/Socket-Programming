@@ -3,8 +3,6 @@ import threading
 
 import server_functions as s_f
 
-
-
 def main():
     """Start the server and accept clients."""
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

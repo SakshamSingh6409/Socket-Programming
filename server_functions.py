@@ -288,7 +288,10 @@ def handle_C(c, addr):
         clients[client_id]["password"] = password
     
         if verify_credentials(db_file, clients[client_id]):
-            c.send(json.dumps({"response": "True", "Client_Detail": clients[client_id]}).encode())
+            client_copy = clients[client_id].copy()
+            client_copy.pop("socket", None)  # remove "socket" before sending to client
+
+            c.send(json.dumps({"response": "True", "Client_Detail": client_copy}).encode())
             while True:
                 mess = c.recv(1024).decode()
                 if not mess:
