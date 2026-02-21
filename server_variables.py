@@ -15,5 +15,5 @@ valid_users = {
 # Track connected clients
 clients = {}
 client_counter = 0
-lock = threading.Lock()  # to safely update shared data
+lock = threading.Lock()    # to safely update shared data
 db_file = "database.db"
