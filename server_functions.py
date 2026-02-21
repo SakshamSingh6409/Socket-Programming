@@ -185,7 +185,6 @@ def insert_row(db_file, table, data_dict):
     conn.close()
     print(f"Inserted row into {table}: {data_dict}")
 
-'''
 
 
 def insert_row(db_file, table, data_dict):
@@ -225,7 +224,44 @@ def insert_row(db_file, table, data_dict):
     conn.close()
     print(f"Inserted row into {table}: {data_dict}")
 
+'''
 
+def insert_row(db_file, table, data_dict):
+    """
+    Insert a row into any table using a dictionary of column-value pairs.
+    Only fills the columns provided in data_dict.
+
+    Returns:
+        int: The auto-generated row ID (e.g., Employee_ID if it's INTEGER PRIMARY KEY AUTOINCREMENT)
+    """
+    conn = sqlite3.connect(db_file)
+    cursor = conn.cursor()
+
+    # Get table column names
+    cursor.execute(f"PRAGMA table_info({table})")
+    columns_info = cursor.fetchall()
+    table_columns = [col[1] for col in columns_info]
+
+    # Ensure keys match actual table columns
+    for key in data_dict.keys():
+        if key not in table_columns:
+            conn.close()
+            raise ValueError(f"Invalid column name: {key}")
+
+    # Build query dynamically
+    columns = ", ".join(data_dict.keys())
+    placeholders = ", ".join(["?" for _ in data_dict])
+    sql = f"INSERT INTO {table} ({columns}) VALUES ({placeholders})"
+
+    cursor.execute(sql, list(data_dict.values()))
+    conn.commit()
+
+    # Capture the auto-generated primary key
+    new_id = cursor.lastrowid
+
+    conn.close()
+    print(f"Inserted row into {table}: {data_dict} (ID={new_id})")
+    return new_id
 #Needs Testing and application
 def table_to_nested_dict(db_file, table):
     """
