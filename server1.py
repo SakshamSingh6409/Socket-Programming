@@ -1,11 +1,8 @@
 import socket
-import json
 import threading
-from datetime import datetime
-import sqlite3
 
 import server_functions as s_f
-
+'''
 # Valid users and their clearance levels
 valid_users = {
     "saksham": "admin",
@@ -17,7 +14,7 @@ clients = {}
 client_counter = 0
 lock = threading.Lock()  # to safely update shared data
 
-'''
+
 def get_D():
     """Fetch and print all rows from Credentials table."""
     conn = sqlite3.connect("database.db")
