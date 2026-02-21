@@ -88,7 +88,7 @@ def has_permission(db_file, role, branch, table, action):
     if action in ("insert", "update", "delete") and editor == 1:
         return True
 
-    return x
+    return False
 
 def write_D_Cred(c, db_file, role, branch):
     """Insert new employee credentials into database using insert_row()."""
