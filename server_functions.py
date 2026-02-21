@@ -300,7 +300,7 @@ def handle_C(c, addr):
                 if process_command(mess, c, client_id, username, errors, timestamp):
                     break
         else:
-            c.send(json.dumps(False).encode())
+            c.send(json.dumps({"response": "False", "Client_Detail": clients[client_id]}).encode())
 
     except Exception as e:
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]

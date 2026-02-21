@@ -111,7 +111,16 @@ def main():
         pas = input("Enter your password: ")
         auth = {"username": usr, "password": pas}
         c.send(json.dumps(auth).encode())
-        mess2 = json.loads(c.recv(1024).decode())
+        raw = c.recv(1024).decode()
+        if not raw:
+            print("No response from server.")
+            return
+        try:
+            mess2 = json.loads(raw)
+        except json.JSONDecodeError:
+            print(f"Invalid JSON from server: {raw}")
+            return
+
         if mess2["response"] == "True":
             run = True
             global user_details
