@@ -1,43 +1,95 @@
 import socket
 import json
 
-def add_D(c):
-    print("which data do you want to add")
-    print("\t\t\tEmployee Credentials [Enter 0]")
-    print("\t\t\tCompany Database [Enter 1]")
+user_details = {}  # Global variable to store authenticated user details
 
-    res = input("Your response: ")
-    c.send(res.encode())  # send choice first
+def process_commands(x, c):
+    if x == "add_D_Cred":
+        # existing employee input flow
+        First_Name = input("Enter First Name: ")
+        Last_Name = input("Enter Last Name: ")
+        Branch = input("Branch of Employee: ")
+        Role = input("Enter Role of Employee: ")
+        Username = input("Username: ")
+        Password = input("Password: ")
+        Status = input("What is the status: ")
 
-    if res == "0":
-        write_D_Cred(c)
-    elif res == "1":
-        write_D_Comp(c)
+        employee_data = {
+            "First_Name": First_Name,
+            "Last_Name": Last_Name,
+            "Branch": Branch,
+            "Role": Role,
+            "Username": Username,
+            "Password": Password,
+            "Status": Status
+        }
+        write_D_Cred(c, employee_data)
+
+    elif x == "insert_row":
+        table = input("Enter table name: ")
+        data = json.loads(input("Enter row data as JSON: "))
+        insert_row_client(c, table, data)
+
+    elif x == "update_cell":
+        table = input("Enter table name: ")
+        target_column = input("Column to update: ")
+        new_value = input("New value: ")
+        conditions = json.loads(input("Enter conditions as JSON: "))
+        update_cell_client(c, table, target_column, new_value, conditions)
+
+    elif x == "get_table":
+        table = input("Enter table name: ")
+        get_table_client(c, table)
+
+    elif x == "Disconnect":
+        disconnect_client(c)
+        return False
+
+    return True
 
 
-def write_D_Comp(c):
-    pass
+def insert_row_client(c, table, data):
+    payload = {"table": table, "data": data}
+    c.send("insert_row".encode())
+    c.send(json.dumps(payload).encode())
+    resp = json.loads(c.recv(4096).decode())
+    if "success" in resp:
+        print(f"Row inserted into {table} with ID {resp['row_id']}")
+    else:
+        print(f"Error: {resp['error']}")
 
-
-def write_D_Cred(c):
-    First_Name = input("Enter First Name: ")
-    Last_Name = input("Enter Last Name: ")
-    Branch = input("Branch of Employee: ")
-    Role = input("Enter Role of Employee: ")
-    Username = input("Username: ")
-    Password = input("Password: ")
-    Status = input("What is the status: ")
-
-    employee_data = {
-        "First_Name": First_Name,
-        "Last_Name": Last_Name,
-        "Branch": Branch,
-        "Role": Role,
-        "Username": Username,
-        "Password": Password,
-        "Status": "Active"
+def update_cell_client(c, table, target_column, new_value, conditions):
+    payload = {
+        "table": table,
+        "target_column": target_column,
+        "new_value": new_value,
+        "conditions": conditions
     }
+    c.send("update_cell".encode())
+    c.send(json.dumps(payload).encode())
+    resp = json.loads(c.recv(4096).decode())
+    if "success" in resp:
+        print(f"Updated {table}: set {target_column} = {new_value} where {conditions}")
+    else:
+        print(f"Error: {resp['error']}")
 
+def get_table_client(c, table):
+    payload = {"table": table}
+    c.send("get_table".encode())
+    c.send(json.dumps(payload).encode())
+    resp = json.loads(c.recv(8192).decode())
+    if "success" in resp:
+        print(f"Data from {table}:")
+        for idx, row in resp["data"].items():
+            print(f"{idx}: {row}")
+    else:
+        print(f"Error: {resp['error']}")
+
+def disconnect_client(c):
+    c.send("Disconnect".encode())
+    print("Disconnected from server.")
+
+def write_D_Cred(c, employee_data):
     c.send(json.dumps(employee_data).encode())
     # Optionally wait for server confirmation
     response = c.recv(1024).decode()
@@ -47,7 +99,6 @@ def write_D_Cred(c):
         print(f"Employee added with ID {resp['Employee_ID']}")
     else:
         print(f"Error: {resp['error']}")
-
 
 def main():
     c = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -61,8 +112,10 @@ def main():
         auth = {"username": usr, "password": pas}
         c.send(json.dumps(auth).encode())
         mess2 = json.loads(c.recv(1024).decode())
-        if mess2 == True:
+        if mess2["response"] == "True":
             run = True
+            global user_details
+            user_details = mess2["Client_Detail"]
         else:
             print("Rejected by Server")
             run = False
@@ -72,11 +125,9 @@ def main():
     while run:
         x = input("Enter anything [Type 'Disconnect' to exit]: ")
         c.send(x.encode())
-
-        if x == "Disconnect":
-            run = False
-        elif x == "add_D":
-            add_D(c)
+        if not process_commands(x, c):
+            break
+    
 
     c.close()
     print("Client stopped.")

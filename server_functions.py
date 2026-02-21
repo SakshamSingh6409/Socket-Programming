@@ -9,21 +9,23 @@ from server_variables import *
 
 def process_command(x, c, client_id, username, errors, timestamp):
     try:
-        if x == "add_D":
-            # Existing flow: choose between Credentials or Company DB
-            res = c.recv(1024).decode()
-            if res == "0":
-                write_D_Cred(c, db_file)
-            elif res == "1":
-                write_D_Comp(c)
-
+        if x == "add_D_Cred":
+            write_D_Cred(c, db_file, clients[client_id]["clearance"], clients[client_id]["branch"])
+        
         elif x == "insert_row":
-            # Client sends: {"table": "Credentials", "data": {...}}
             payload = json.loads(c.recv(4096).decode())
             table = payload["table"]
             data = payload["data"]
-            new_id = insert_row(db_file, table, data)
-            c.send(json.dumps({"success": True, "row_id": new_id}).encode())
+
+            role = clients[client_id]["clearance"]
+            branch = clients[client_id]["branch"]
+
+            try:
+                new_id = insert_row(db_file, table, data, role, branch)
+                c.send(json.dumps({"success": True, "row_id": new_id}).encode())
+            except Exception as e:
+             c.send(json.dumps({"error": str(e)}).encode())
+
 
         elif x == "update_cell":
             # Client sends: {"table": "Credentials", "target_column": "Status",
@@ -53,14 +55,47 @@ def process_command(x, c, client_id, username, errors, timestamp):
         errors[timestamp] = str(e)
         c.send(json.dumps({"error": str(e)}).encode())
 
-def write_D_Comp(c):
-    # Placeholder for company database logic
-    pass
+def has_permission(db_file, role, branch, table, action):
+    """
+    Check if a user has permission for a given action on a table.
+    action: "view", "insert", "update", "delete"
+    """
+    conn = sqlite3.connect(db_file)
+    cursor = conn.cursor()
+    cursor.execute("SELECT Editor, Viewer, Tables FROM Roles WHERE Role=? AND Branch=?", (role, branch))
+    row = cursor.fetchone()
+    conn.close()
 
+    if not row:
+        return False
 
+    editor, viewer, tables_str = row
+    try:
+        tables = json.loads(tables_str)
+    except Exception:
+        tables = [t.strip() for t in tables_str.strip("[]").split(",")]
 
-def write_D_Cred(c, db_file):
+    # Admin case: if "All tables" is in list
+    if "All tables" in tables:
+        return True
+
+    # Check table access
+    if table not in tables:
+        return False
+    x = False
+    # Check action permissions
+    if action == "view" and viewer == 1:
+        x = True
+    if action in ("insert", "update", "delete") and editor == 1:
+        x = True
+
+    return x
+
+def write_D_Cred(c, db_file, role, branch):
     """Insert new employee credentials into database using insert_row()."""
+    
+    if not has_permission(db_file, role, branch, "Credentials", "insert"):
+        raise PermissionError(f"{role} not allowed to insert into Credentials")
     try:
         user_data = json.loads(c.recv(1024).decode())
         print("Received user_data:", user_data)  # debug
@@ -83,7 +118,6 @@ def write_D_Cred(c, db_file):
     except Exception as e:
         print(f"Error inserting data: {e}")
         c.send(json.dumps({"error": str(e)}).encode())
-
 
 def log(client_info, commands, errors, db_file):
     """Insert a log entry into Logs table."""
@@ -111,9 +145,7 @@ def log(client_info, commands, errors, db_file):
     conn.commit()
     conn.close()
 
-
-#Needs Testing and application
-def update_cell(db_file, table, target_column, new_value, conditions):
+def update_cell(db_file, table, target_column, new_value, conditions, role, branch):
     """
     Update a single cell in an SQLite database.
 
@@ -124,6 +156,10 @@ def update_cell(db_file, table, target_column, new_value, conditions):
         new_value (any): New value to set in target_column
         conditions (dict): Dictionary of {column: value} to filter rows
     """
+
+    if not has_permission(db_file, role, branch, table, "update"):
+        raise PermissionError(f"{role} not allowed to update {table}")
+
     conn = sqlite3.connect(db_file)
     cursor = conn.cursor()
 
@@ -138,95 +174,7 @@ def update_cell(db_file, table, target_column, new_value, conditions):
     conn.close()
     print(f"Updated {target_column} to {new_value} where {conditions}")
 
-
-'''
-def insert_row(db_file, table, data_dict):
-    """
-    Insert a row into any table using a dictionary of column-value pairs.
-    Automatically checks that the number of keys matches the number of columns.
-
-    Args:
-        db_file (str): Path to the .db file
-        table (str): Table name
-        data_dict (dict): {column: value} pairs to insert
-
-    Raises:
-        ValueError: If number of keys in data_dict does not match table columns
-    """
-    conn = sqlite3.connect(db_file)
-    cursor = conn.cursor()
-
-    # Get table column names
-    cursor.execute(f"PRAGMA table_info({table})")
-    columns_info = cursor.fetchall()
-    table_columns = [col[1] for col in columns_info]  # col[1] is the column name
-
-    # Check column count
-    if len(data_dict.keys()) != len(table_columns):
-        conn.close()
-        raise ValueError(
-            f"Column count mismatch: table has {len(table_columns)} columns, "
-            f"but {len(data_dict.keys())} keys were provided."
-        )
-
-    # Ensure keys match actual table columns
-    for key in data_dict.keys():
-        if key not in table_columns:
-            conn.close()
-            raise ValueError(f"Invalid column name: {key}")
-
-    # Build query
-    columns = ", ".join(data_dict.keys())
-    placeholders = ", ".join(["?" for _ in data_dict])
-    sql = f"INSERT INTO {table} ({columns}) VALUES ({placeholders})"
-
-    cursor.execute(sql, list(data_dict.values()))
-    conn.commit()
-    conn.close()
-    print(f"Inserted row into {table}: {data_dict}")
-
-
-
-def insert_row(db_file, table, data_dict):
-    """
-    Insert a row into any table using a dictionary of column-value pairs.
-    Only fills the columns provided in data_dict.
-
-    Args:
-        db_file (str): Path to the .db file
-        table (str): Table name
-        data_dict (dict): {column: value} pairs to insert
-
-    Raises:
-        ValueError: If any key in data_dict is not a valid table column
-    """
-    conn = sqlite3.connect(db_file)
-    cursor = conn.cursor()
-
-    # Get table column names
-    cursor.execute(f"PRAGMA table_info({table})")
-    columns_info = cursor.fetchall()
-    table_columns = [col[1] for col in columns_info]  # col[1] is the column name
-
-    # Ensure keys match actual table columns
-    for key in data_dict.keys():
-        if key not in table_columns:
-            conn.close()
-            raise ValueError(f"Invalid column name: {key}")
-
-    # Build query dynamically based on provided keys
-    columns = ", ".join(data_dict.keys())
-    placeholders = ", ".join(["?" for _ in data_dict])
-    sql = f"INSERT INTO {table} ({columns}) VALUES ({placeholders})"
-
-    cursor.execute(sql, list(data_dict.values()))
-    conn.commit()
-    conn.close()
-    print(f"Inserted row into {table}: {data_dict}")
-
-'''
-
-def insert_row(db_file, table, data_dict):
+def insert_row(db_file, table, data_dict, role, branch):
     """
     Insert a row into any table using a dictionary of column-value pairs.
     Only fills the columns provided in data_dict.
@@ -234,6 +182,9 @@ def insert_row(db_file, table, data_dict):
     Returns:
         int: The auto-generated row ID (e.g., Employee_ID if it's INTEGER PRIMARY KEY AUTOINCREMENT)
     """
+    if not has_permission(db_file, role, branch, table, "insert"):
+        raise PermissionError(f"{role} not allowed to insert into {table}")
+
     conn = sqlite3.connect(db_file)
     cursor = conn.cursor()
 
@@ -262,8 +213,8 @@ def insert_row(db_file, table, data_dict):
     conn.close()
     print(f"Inserted row into {table}: {data_dict} (ID={new_id})")
     return new_id
-#Needs Testing and application
-def table_to_nested_dict(db_file, table):
+
+def table_to_nested_dict(db_file, table, role, branch):
     """
     Convert a table into a nested dictionary:
     { row_index: {column1: value1, column2: value2, ...}, ... }
@@ -272,6 +223,9 @@ def table_to_nested_dict(db_file, table):
         db_file (str): Path to the .db file
         table (str): Table name
     """
+    if not has_permission(db_file, role, branch, table, "view"):
+        raise PermissionError(f"{role} not allowed to view {table}")
+
     conn = sqlite3.connect(db_file)
     cursor = conn.cursor()
 
@@ -287,7 +241,6 @@ def table_to_nested_dict(db_file, table):
     conn.close()
     return nested_dict
 
-
 def verify_credentials(db_file, username, password):
     """Verify if username and password are valid."""
     data = table_to_nested_dict(db_file, "Credentials")
@@ -300,7 +253,6 @@ def verify_credentials(db_file, username, password):
             else:
                 return False
     return False
-
 
 def handle_C(c, addr):
     """Handle a single client connection."""
@@ -336,7 +288,7 @@ def handle_C(c, addr):
         clients[client_id]["clearance"] = valid_users.get(username, "none")
     
         if verify_credentials(db_file, username, password):
-            c.send(json.dumps(True).encode())
+            c.send(json.dumps({"response": "True", "Client_Detail": clients[client_id]}).encode())
             while True:
                 mess = c.recv(1024).decode()
                 if not mess:
