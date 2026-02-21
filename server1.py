@@ -128,6 +128,11 @@ def handle_C(c, addr):
             "login_time": datetime.now()
         }
 
+    print(clients)
+    print(f"{client_id} connected from {addr}")
+    c.send('y'.encode())
+    
+
     try:
         auth = json.loads(c.recv(1024).decode())
         username = auth.get("username")
@@ -136,11 +141,6 @@ def handle_C(c, addr):
         clients[client_id]["username"] = username
         clients[client_id]["password"] = password
         clients[client_id]["clearance"] = valid_users.get(username, "none")
-    
-
-        print(clients)
-        print(f"{client_id} connected from {addr}")
-        c.send('y'.encode())
     
         if username in valid_users:
             c.send(json.dumps(True).encode())
