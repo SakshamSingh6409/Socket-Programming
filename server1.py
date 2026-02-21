@@ -17,6 +17,7 @@ lock = threading.Lock()  # to safely update shared data
 
 
 def get_D():
+    """Fetch and print all rows from Credentials table."""
     conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM Credentials")
@@ -29,6 +30,7 @@ def get_D():
 
 
 def add_D(c):
+    """Handle adding data choice from client."""
     res = c.recv(1024).decode()  # receive choice: "0" or "1"
     if res == "0":
         write_D_Cred(c)
@@ -42,6 +44,7 @@ def write_D_Comp(c):
 
 
 def write_D_Cred(c):
+    """Insert new employee credentials into database."""
     conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
 
@@ -80,13 +83,14 @@ def write_D_Cred(c):
 
 
 def log(client_info, commands, errors):
+    """Insert a log entry into Logs table."""
     conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
 
     # Prepare values
-    user = client_info["username"]
+    user = client_info["username"] or "unknown"
     ip = client_info["addr"][0]
-    clearance = client_info["clearance"]
+    clearance = client_info["clearance"] or "none"
     login_time = client_info["login_time"].strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
     logout_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
     duration = str(datetime.now() - client_info["login_time"])
@@ -99,10 +103,14 @@ def log(client_info, commands, errors):
              (User, IP, Clearance, Login_time, Logout_time, Duration, Commands, Errors)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?)"""
 
-    cursor.execute(sql, (user, ip, clearance, login_time, logout_time, duration, commands_json, errors_json))
+    cursor.execute(sql, (user, ip, clearance, login_time, logout_time,
+                         duration, commands_json, errors_json))
     conn.commit()
     conn.close()
+
+
 def handle_C(c, addr):
+    """Handle a single client connection."""
     global client_counter
     commands = {}
     errors = {}
@@ -129,11 +137,6 @@ def handle_C(c, addr):
         clients[client_id]["password"] = password
         clients[client_id]["clearance"] = valid_users.get(username, "none")
 
-'''
-    print(clients)
-    print(f"{client_id} connected from {addr}")
-    c.send('y'.encode())
-'''
         if username in valid_users:
             c.send(json.dumps(True).encode())
             while True:
@@ -166,7 +169,9 @@ def handle_C(c, addr):
         with lock:
             del clients[client_id]
 
+
 def main():
+    """Start the server and accept clients."""
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.bind(("100.86.253.5", 12345))
