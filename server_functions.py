@@ -289,8 +289,13 @@ def handle_C(c, addr):
 
         client_copy = clients[client_id].copy()
         client_copy.pop("socket", None)  # remove "socket" before sending to client
+        client_copy.pop("login_time", None) # remove "login_time" before sending to client
 
         if verify_credentials(db_file, clients[client_id]):
+            client_copy = clients[client_id].copy()
+            client_copy.pop("socket", None)  # remove "socket" before sending to client
+            client_copy.pop("login_time", None) # remove "login_time" before sending to client
+
             c.send(json.dumps({"response": "True", "Client_Detail": client_copy}).encode())
             while True:
                 mess = c.recv(1024).decode()
