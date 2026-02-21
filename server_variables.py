@@ -16,4 +16,4 @@ valid_users = {
 clients = {}
 client_counter = 0
 lock = threading.Lock()    # to safely update shared data
-db_file = "database.db"
+db_file = "database1.db"
