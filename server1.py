@@ -288,7 +288,7 @@ def main():
     try:
         while True:
             c, addr = s.accept()
-            threading.Thread(target=functions_server.handle_C, args=(c, addr), daemon=True).start()
+            threading.Thread(target=s_f.handle_C, args=(c, addr), daemon=True).start()
     except KeyboardInterrupt:
         print("Server shutting down...")
     finally:
