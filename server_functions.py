@@ -3,21 +3,24 @@ import json
 import threading
 from datetime import datetime
 import sqlite3
+import bcrypt
 
 from server_variables import *
-'''
-def get_D():
-    """Fetch and print all rows from Credentials table."""
-    conn = sqlite3.connect("database.db")
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM Credentials")
-    rows = cursor.fetchall()
-    column_name = [description[0] for description in cursor.description]
-    print(column_name)
-    for row in rows:
-        print(row)
-    conn.close()
-'''
+
+def process_command(x, c, client_id, username, errors, timestamp):
+    if x == "add_D":
+        try:
+            res = c.recv(1024).decode()  # receive choice: "0" or "1"
+            if res == "0":
+                write_D_Cred(c, db_file)
+            elif res == "1":
+                write_D_Comp(c)
+        except Exception as e:
+            errors[timestamp] = str(e)
+    elif x == "Disconnect":
+        return True  # Signal to disconnect
+    else:
+        print(f"[{client_id} | {username}] {x}")
 
 
 
@@ -26,43 +29,31 @@ def write_D_Comp(c):
     pass
 
 
-def write_D_Cred(c, db_file):
-    """Insert new employee credentials into database."""
-    conn = sqlite3.connect(db_file)
-    cursor = conn.cursor()
 
+def write_D_Cred(c, db_file):
+    """Insert new employee credentials into database using insert_row()."""
     try:
         user_data = json.loads(c.recv(1024).decode())
         print("Received user_data:", user_data)  # debug
     except Exception as e:
         print(f"Error receiving user data: {e}")
         c.send(json.dumps({"error": "Invalid data"}).encode())
-        conn.close()
         return
 
-    sql = """INSERT INTO Credentials 
-             (First_Name, Last_Name, Branch, Role, Username, Password, Status)
-             VALUES (?, ?, ?, ?, ?, ?, ?)"""
+    # Hash the password before storing
+    user_data["Password"] = bcrypt.hashpw(
+        user_data["Password"].encode('utf-8'),
+        bcrypt.gensalt()
+    ).decode('utf-8')
 
     try:
-        cursor.execute(sql, (
-            user_data["First_Name"],
-            user_data["Last_Name"],
-            user_data["Branch"],
-            user_data["Role"],
-            user_data["Username"],
-            user_data["Password"],
-            user_data["Status"]
-        ))
-        conn.commit()
-        new_id = cursor.lastrowid
+        # Use insert_row() instead of hardcoded SQL
+        new_id = insert_row(db_file, "Credentials", user_data)
         c.send(json.dumps({"success": True, "Employee_ID": new_id}).encode())
         print(f"Inserted row with Employee_ID {new_id}")
     except Exception as e:
         print(f"Error inserting data: {e}")
         c.send(json.dumps({"error": str(e)}).encode())
-    finally:
-        conn.close()
 
 
 def log(client_info, commands, errors, db_file):
@@ -118,6 +109,8 @@ def update_cell(db_file, table, target_column, new_value, conditions):
     conn.close()
     print(f"Updated {target_column} to {new_value} where {conditions}")
 
+
+'''
 def insert_row(db_file, table, data_dict):
     """
     Insert a row into any table using a dictionary of column-value pairs.
@@ -163,6 +156,46 @@ def insert_row(db_file, table, data_dict):
     conn.close()
     print(f"Inserted row into {table}: {data_dict}")
 
+'''
+
+
+def insert_row(db_file, table, data_dict):
+    """
+    Insert a row into any table using a dictionary of column-value pairs.
+    Only fills the columns provided in data_dict.
+
+    Args:
+        db_file (str): Path to the .db file
+        table (str): Table name
+        data_dict (dict): {column: value} pairs to insert
+
+    Raises:
+        ValueError: If any key in data_dict is not a valid table column
+    """
+    conn = sqlite3.connect(db_file)
+    cursor = conn.cursor()
+
+    # Get table column names
+    cursor.execute(f"PRAGMA table_info({table})")
+    columns_info = cursor.fetchall()
+    table_columns = [col[1] for col in columns_info]  # col[1] is the column name
+
+    # Ensure keys match actual table columns
+    for key in data_dict.keys():
+        if key not in table_columns:
+            conn.close()
+            raise ValueError(f"Invalid column name: {key}")
+
+    # Build query dynamically based on provided keys
+    columns = ", ".join(data_dict.keys())
+    placeholders = ", ".join(["?" for _ in data_dict])
+    sql = f"INSERT INTO {table} ({columns}) VALUES ({placeholders})"
+
+    cursor.execute(sql, list(data_dict.values()))
+    conn.commit()
+    conn.close()
+    print(f"Inserted row into {table}: {data_dict}")
+
 
 #Needs Testing and application
 def table_to_nested_dict(db_file, table):
@@ -191,10 +224,8 @@ def table_to_nested_dict(db_file, table):
 
 
 def verify_credentials(db_file, username, password):
-    """
-    Verify if username and password are valid.
-    """
-    data = table_to_nested_dict(db_file,"Credentials")
+    """Verify if username and password are valid."""
+    data = table_to_nested_dict(db_file, "Credentials")
 
     for row in data.values():
         if row["Username"] == username:
@@ -248,18 +279,8 @@ def handle_C(c, addr):
 
                 timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
                 commands[timestamp] = mess
-                """
-                if mess == "add_D":
-                    try:
-                        add_D(c)
-                    except Exception as e:
-                        errors[timestamp] = str(e)
-                elif mess == "Disconnect":
-                    break
-                else:
-                    print(f"[{client_id} | {username}] {mess}")
-                """
-                if commands(mess, c, client_id, username, errors, timestamp):
+
+                if process_command(mess, c, client_id, username, errors, timestamp):
                     break
         else:
             c.send(json.dumps(False).encode())
@@ -273,19 +294,4 @@ def handle_C(c, addr):
         c.close()
         with lock:
             del clients[client_id]
-
-def commands(x, c, client_id, username, errors, timestamp):
-    if x == "add_D":
-        try:
-            res = c.recv(1024).decode()  # receive choice: "0" or "1"
-            if res == "0":
-                write_D_Cred(c)
-            elif res == "1":
-                write_D_Comp(c)
-
-        except Exception as e:
-            errors[timestamp] = str(e)
-    elif x == "Disconnect":
-        return True  # Signal to disconnect
-    else:
-        print(f"[{client_id} | {username}] {x}")
+        print(f"{client_id} disconnected")
