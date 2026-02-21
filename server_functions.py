@@ -5,7 +5,7 @@ from datetime import datetime
 import sqlite3
 
 from server_variables import *
-
+'''
 def get_D():
     """Fetch and print all rows from Credentials table."""
     conn = sqlite3.connect("database.db")
@@ -17,7 +17,7 @@ def get_D():
     for row in rows:
         print(row)
     conn.close()
-
+'''
 
 def add_D(c):
     """Handle adding data choice from client."""
@@ -33,9 +33,9 @@ def write_D_Comp(c):
     pass
 
 
-def write_D_Cred(c):
+def write_D_Cred(c, db_file):
     """Insert new employee credentials into database."""
-    conn = sqlite3.connect("database.db")
+    conn = sqlite3.connect(db_file)
     cursor = conn.cursor()
 
     try:
@@ -72,9 +72,9 @@ def write_D_Cred(c):
         conn.close()
 
 
-def log(client_info, commands, errors):
+def log(client_info, commands, errors, db_file):
     """Insert a log entry into Logs table."""
-    conn = sqlite3.connect("database.db")
+    conn = sqlite3.connect(db_file)
     cursor = conn.cursor()
 
     # Prepare values
@@ -82,7 +82,7 @@ def log(client_info, commands, errors):
     ip = client_info["addr"][0]
     clearance = client_info["clearance"] or "none"
     login_time = client_info["login_time"].strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
-    logout_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+    logout_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3] #Gives time in according to UTC Time
     duration = str(datetime.now() - client_info["login_time"])
 
     # Convert dicts to JSON for storage
@@ -198,6 +198,23 @@ def insert_row(db_file, table, data_dict):
     conn.close()
     print(f"Inserted row into {table}: {data_dict}")
 
+
+def verify_credentials(db_file, table, username, password):
+    """
+    Verify if username and password are valid.
+    """
+    data = table_to_nested_dict(db_file, table)
+
+    for row in data.values():
+        if row["Username"] == username:
+            stored_hash = row["Password"]
+            if bcrypt.checkpw(password.encode('utf-8'), stored_hash.encode('utf-8')):
+                return True
+            else:
+                return False
+    return False
+
+
 def handle_C(c, addr):
     """Handle a single client connection."""
     global client_counter
@@ -258,7 +275,7 @@ def handle_C(c, addr):
         errors[timestamp] = str(e)
 
     finally:
-        log(clients[client_id], str(commands), str(errors))  # <-- call logging here
+        log(clients[client_id], str(commands), str(errors), db_file)  # <-- call logging here
         c.close()
         with lock:
             del clients[client_id]
