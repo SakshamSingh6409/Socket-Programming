@@ -8,21 +8,50 @@ import bcrypt
 from server_variables import *
 
 def process_command(x, c, client_id, username, errors, timestamp):
-    if x == "add_D":
-        try:
-            res = c.recv(1024).decode()  # receive choice: "0" or "1"
+    try:
+        if x == "add_D":
+            # Existing flow: choose between Credentials or Company DB
+            res = c.recv(1024).decode()
             if res == "0":
                 write_D_Cred(c, db_file)
             elif res == "1":
                 write_D_Comp(c)
-        except Exception as e:
-            errors[timestamp] = str(e)
-    elif x == "Disconnect":
-        return True  # Signal to disconnect
-    else:
-        print(f"[{client_id} | {username}] {x}")
 
+        elif x == "insert_row":
+            # Client sends: {"table": "Credentials", "data": {...}}
+            payload = json.loads(c.recv(4096).decode())
+            table = payload["table"]
+            data = payload["data"]
+            new_id = insert_row(db_file, table, data)
+            c.send(json.dumps({"success": True, "row_id": new_id}).encode())
 
+        elif x == "update_cell":
+            # Client sends: {"table": "Credentials", "target_column": "Status",
+            #                "new_value": "Inactive", "conditions": {"Username": "abc"}}
+            payload = json.loads(c.recv(4096).decode())
+            update_cell(db_file,
+                        payload["table"],
+                        payload["target_column"],
+                        payload["new_value"],
+                        payload["conditions"])
+            c.send(json.dumps({"success": True}).encode())
+
+        elif x == "get_table":
+            # Client sends: {"table": "Credentials"}
+            payload = json.loads(c.recv(4096).decode())
+            table = payload["table"]
+            data = table_to_nested_dict(db_file, table)
+            c.send(json.dumps({"success": True, "data": data}).encode())
+
+        elif x == "Disconnect":
+            return True  # Signal to disconnect
+
+        else:
+            print(f"[{client_id} | {username}] Unknown command: {x}")
+
+    except Exception as e:
+        errors[timestamp] = str(e)
+        c.send(json.dumps({"error": str(e)}).encode())
 
 def write_D_Comp(c):
     # Placeholder for company database logic
