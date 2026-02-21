@@ -1,23 +1,5 @@
-import socket
-import json
-import threading
-from datetime import datetime
-import sqlite3
 
-import server_functions as s_f
 
-# Valid users and their clearance levels
-valid_users = {
-    "saksham": "admin",
-    "guest": "low"
-}
-
-# Track connected clients
-clients = {}
-client_counter = 0
-lock = threading.Lock()  # to safely update shared data
-
-'''
 def get_D():
     """Fetch and print all rows from Credentials table."""
     conn = sqlite3.connect("database.db")
@@ -275,25 +257,3 @@ def handle_C(c, addr):
         with lock:
             del clients[client_id]
 
-'''
-def main():
-    """Start the server and accept clients."""
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    s.bind(("100.86.253.5", 12345))
-    s.listen(4000)
-
-    print("Server listening...")
-
-    try:
-        while True:
-            c, addr = s.accept()
-            threading.Thread(target=functions_server.handle_C, args=(c, addr), daemon=True).start()
-    except KeyboardInterrupt:
-        print("Server shutting down...")
-    finally:
-        s.close()
-
-
-if __name__ == "__main__":
-    main()
