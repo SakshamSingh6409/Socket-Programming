@@ -327,7 +327,10 @@ def handle_C(c, addr):
             while True:
                 try:
                     mess = c.recv(1024).decode()
-                except ConnectionError:
+                    
+                    if not mess:  # <-- add this
+                        break
+                except (ConnectionError, OSError):
                     break
 
                 timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
