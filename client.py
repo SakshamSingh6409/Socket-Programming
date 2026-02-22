@@ -47,37 +47,60 @@ def process_commands(x, c):
 
     return True
 
+def recv_json(c):
+    """Receive length-prefixed JSON."""
+    raw_len = b''
+    while len(raw_len) < 4:
+        chunk = c.recv(4 - len(raw_len))
+        if not chunk:
+            raise ConnectionError("Socket closed")
+        raw_len += chunk
+    msg_len = int.from_bytes(raw_len, 'big')
+    data = b''
+    while len(data) < msg_len:
+        chunk = c.recv(min(4096, msg_len - len(data)))
+        if not chunk:
+            raise ConnectionError("Socket closed")
+        data += chunk
+    return json.loads(data.decode())
+
+def send_json(c, data):
+    """Send JSON with length prefix."""
+    msg = json.dumps(data).encode()
+    length = len(msg).to_bytes(4, 'big')
+    c.send(length + msg)
+
 
 def insert_row_client(c, table, data):
-    payload = {"table": table, "data": data}
     c.send("insert_row".encode())
-    c.send(json.dumps(payload).encode())
-    resp = json.loads(c.recv(4096).decode())
+    payload = {"table": table, "data": data}
+    send_json(c, payload)
+    resp = recv_json(c)
     if "success" in resp:
         print(f"Row inserted into {table} with ID {resp['row_id']}")
     else:
         print(f"Error: {resp['error']}")
 
 def update_cell_client(c, table, target_column, new_value, conditions):
+    c.send("update_cell".encode())
     payload = {
         "table": table,
         "target_column": target_column,
         "new_value": new_value,
         "conditions": conditions
     }
-    c.send("update_cell".encode())
-    c.send(json.dumps(payload).encode())
-    resp = json.loads(c.recv(4096).decode())
+    send_json(c, payload)
+    resp = recv_json(c)
     if "success" in resp:
         print(f"Updated {table}: set {target_column} = {new_value} where {conditions}")
     else:
         print(f"Error: {resp['error']}")
 
 def get_table_client(c, table):
+    c.send("get_table".encode())
     payload = {"table": table}
-    #c.send("get_table".encode())
-    c.send(json.dumps(payload).encode())
-    resp = json.loads(c.recv(8192).decode())
+    send_json(c, payload)
+    resp = recv_json(c)
     if "success" in resp:
         print(f"Data from {table}:")
         for idx, row in resp["data"].items():
@@ -90,15 +113,15 @@ def disconnect_client(c):
     print("Disconnected from server.")
 
 def write_D_Cred(c, employee_data):
-    c.send(json.dumps(employee_data).encode())
+    c.send("add_D_Cred".encode())
+    send_json(c, employee_data)
     # Optionally wait for server confirmation
-    response = c.recv(1024).decode()
-    resp = json.loads(response)
+    response = recv_json(c)
     
-    if "success" in resp:
-        print(f"Employee added with ID {resp['Employee_ID']}")
+    if "success" in response:
+        print(f"Employee added with ID {response['Employee_ID']}")
     else:
-        print(f"Error: {resp['error']}")
+        print(f"Error: {response['error']}")
 
 def main():
     c = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -110,15 +133,11 @@ def main():
         usr = input("Enter your username: ")
         pas = input("Enter your password: ")
         auth = {"username": usr, "password": pas}
-        c.send(json.dumps(auth).encode())
-        raw = c.recv(1024).decode()
-        if not raw:
-            print("No response from server.")
-            return
+        send_json(c, auth)
         try:
-            mess2 = json.loads(raw)
+            mess2 = recv_json(c)
         except json.JSONDecodeError:
-            print(f"Invalid JSON from server: {raw}")
+            print(f"Invalid JSON from server: {mess2}")
             return
 
         if mess2["response"] == "True":
@@ -133,10 +152,8 @@ def main():
 
     while run:
         x = input("Enter anything [Type 'Disconnect' to exit]: ")
-        c.send(x.encode())
         if not process_commands(x, c):
             break
-    
 
     c.close()
     print("Client stopped.")

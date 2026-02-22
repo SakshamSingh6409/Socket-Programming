@@ -13,7 +13,7 @@ def process_command(x, c, client_id, username, errors, timestamp):
             write_D_Cred(c, db_file, clients[client_id]["clearance"], clients[client_id]["branch"])
         
         elif x == "insert_row":
-            payload = json.loads(c.recv(4096).decode())
+            payload = recv_json(c)
             table = payload["table"]
             data = payload["data"]
 
@@ -22,20 +22,20 @@ def process_command(x, c, client_id, username, errors, timestamp):
 
             try:
                 new_id = insert_row(db_file, table, data, role, branch)
-                c.send(json.dumps({"success": True, "row_id": new_id}).encode())
+                send_json(c, {"success": True, "row_id": new_id})
             except Exception as e:
-             c.send(json.dumps({"error": str(e)}).encode())
+                send_json(c, {"error": str(e)})
 
         elif x == "get_table":
-            payload = json.loads(c.recv(4096).decode())
+            payload = recv_json(c)
             table = payload["table"]
             role = clients[client_id]["clearance"]    # <-- add
             branch = clients[client_id]["branch"]     # <-- add
             data = table_to_nested_dict(db_file, table, role, branch)  # <-- pass them
-            c.send(json.dumps({"success": True, "data": data}).encode())
+            send_json(c, {"success": True, "data": data})
 
         elif x == "update_cell":
-            payload = json.loads(c.recv(4096).decode())
+            payload = recv_json(c)
             role = clients[client_id]["clearance"]    # <-- add
             branch = clients[client_id]["branch"]     # <-- add
             update_cell(db_file,
@@ -44,7 +44,7 @@ def process_command(x, c, client_id, username, errors, timestamp):
                         payload["new_value"],
                         payload["conditions"],
                         role, branch)                 # <-- pass them
-            c.send(json.dumps({"success": True}).encode())
+            send_json(c, {"success": True})
 
         elif x == "Disconnect":
             return True  # Signal to disconnect
@@ -54,7 +54,30 @@ def process_command(x, c, client_id, username, errors, timestamp):
 
     except Exception as e:
         errors[timestamp] = str(e)
-        c.send(json.dumps({"error": str(e)}).encode())
+        send_json(c, {"error": str(e)})
+
+def recv_json(c):
+    """Receive length-prefixed JSON."""
+    raw_len = b''
+    while len(raw_len) < 4:
+        chunk = c.recv(4 - len(raw_len))
+        if not chunk:
+            raise ConnectionError("Socket closed")
+        raw_len += chunk
+    msg_len = int.from_bytes(raw_len, 'big')
+    data = b''
+    while len(data) < msg_len:
+        chunk = c.recv(min(4096, msg_len - len(data)))
+        if not chunk:
+            raise ConnectionError("Socket closed")
+        data += chunk
+    return json.loads(data.decode())
+
+def send_json(c, data):
+    """Send JSON with length prefix."""
+    msg = json.dumps(data).encode()
+    length = len(msg).to_bytes(4, 'big')
+    c.send(length + msg)
 
 def has_permission(db_file, role, branch, table, action):
     """
@@ -97,11 +120,11 @@ def write_D_Cred(c, db_file, role, branch):
     if not has_permission(db_file, role, branch, "Credentials", "insert"):
         raise PermissionError(f"{role} not allowed to insert into Credentials")
     try:
-        user_data = json.loads(c.recv(1024).decode())
+        user_data = recv_json(c)
         print("Received user_data:", user_data)  # debug
     except Exception as e:
         print(f"Error receiving user data: {e}")
-        c.send(json.dumps({"error": "Invalid data"}).encode())
+        send_json(c, {"error": "Invalid data"})
         return
 
     # Hash the password before storing
@@ -113,12 +136,12 @@ def write_D_Cred(c, db_file, role, branch):
     try:
         # Use insert_row() instead of hardcoded SQL
         new_id = insert_row(db_file, "Credentials", user_data, role, branch)
-        c.send(json.dumps({"success": True, "Employee_ID": new_id}).encode())
+        send_json(c, {"success": True, "Employee_ID": new_id})
         print(f"Inserted row with Employee_ID {new_id}")
     except Exception as e:
         print(f"Error inserting data: {e}")
-        c.send(json.dumps({"error": str(e)}).encode())
-
+        send_json(c, {"error": str(e)})
+        
 def log(client_info, commands, errors, db_file):
     """Insert a log entry into Logs table."""
     conn = sqlite3.connect(db_file)
@@ -281,10 +304,10 @@ def handle_C(c, addr):
 
     print(f"{client_id} connected from {addr}")
     c.send('y'.encode())
-    
+    #send_json(c, {"message": "Connected to server"})  
 
     try:
-        auth = json.loads(c.recv(1024).decode())
+        auth = recv_json(c)
         username = auth.get("username")
         password = auth.get("password")
 
@@ -300,10 +323,11 @@ def handle_C(c, addr):
             client_copy.pop("socket", None)  # remove "socket" before sending to client
             client_copy.pop("login_time", None) # remove "login_time" before sending to client
             print(clients)
-            c.send(json.dumps({"response": "True", "Client_Detail": client_copy}).encode())
+            send_json(c, {"response": "True", "Client_Detail": client_copy})
             while True:
-                mess = c.recv(1024).decode()
-                if not mess:
+                try:
+                    mess = c.recv(1024).decode()
+                except ConnectionError:
                     break
 
                 timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
@@ -312,7 +336,7 @@ def handle_C(c, addr):
                 if process_command(mess, c, client_id, username, errors, timestamp):
                     break
         else:
-            c.send(json.dumps({"response": "False", "Client_Detail": client_copy}).encode())
+            send_json(c, {"response": "False", "Client_Detail": client_copy})
 
     except Exception as e:
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
