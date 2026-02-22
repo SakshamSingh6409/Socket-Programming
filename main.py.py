@@ -23,26 +23,31 @@ def process_commands(x, c):
             "Password": Password,
             "Status": Status
         }
-        write_D_Cred(c, employee_data)
+        result = write_D_Cred(c, employee_data)
+        print(result)
 
     elif x == "insert_row":
         table = input("Enter table name: ")
         data = json.loads(input("Enter row data as JSON: "))
-        insert_row_client(c, table, data)
+        result = insert_row_client(c, table, data)
+        print(result)
 
     elif x == "update_cell":
         table = input("Enter table name: ")
         target_column = input("Column to update: ")
         new_value = input("New value: ")
         conditions = json.loads(input("Enter conditions as JSON: "))
-        update_cell_client(c, table, target_column, new_value, conditions)
+        result = update_cell_client(c, table, target_column, new_value, conditions)
+        print(result)
 
     elif x == "get_table":
         table = input("Enter table name: ")
-        get_table_client(c, table)
+        result = get_table_client(c, table)
+        print(result)
 
     elif x == "Disconnect":
-        disconnect_client(c)
+        result = disconnect_client(c)
+        print(result)
         return False
 
     return True
@@ -70,16 +75,15 @@ def send_json(c, data):
     length = len(msg).to_bytes(4, 'big')
     c.send(length + msg)
 
-
 def insert_row_client(c, table, data):
     c.send("insert_row".encode())
     payload = {"table": table, "data": data}
     send_json(c, payload)
     resp = recv_json(c)
     if "success" in resp:
-        print(f"Row inserted into {table} with ID {resp['row_id']}")
+        return f"Row inserted into {table} with ID {resp['row_id']}"
     else:
-        print(f"Error: {resp['error']}")
+        return f"Error: {resp['error']}"
 
 def update_cell_client(c, table, target_column, new_value, conditions):
     c.send("update_cell".encode())
@@ -92,9 +96,9 @@ def update_cell_client(c, table, target_column, new_value, conditions):
     send_json(c, payload)
     resp = recv_json(c)
     if "success" in resp:
-        print(f"Updated {table}: set {target_column} = {new_value} where {conditions}")
+        return f"Updated {table}: set {target_column} = {new_value} where {conditions}"
     else:
-        print(f"Error: {resp['error']}")
+        return f"Error: {resp['error']}"
 
 def get_table_client(c, table):
     c.send("get_table".encode())
@@ -102,15 +106,17 @@ def get_table_client(c, table):
     send_json(c, payload)
     resp = recv_json(c)
     if "success" in resp:
-        print(f"Data from {table}:")
-        for idx, row in resp["data"].items():
+        return resp
+        ''' 
+            for idx, row in resp["data"].items():
             print(f"{idx}: {row}")
+        '''
     else:
-        print(f"Error: {resp['error']}")
+        return(f"Error: {resp['error']}")
 
 def disconnect_client(c):
     c.send("Disconnect".encode())
-    print("Disconnected from server.")
+    return "Disconnected from server."
 
 def write_D_Cred(c, employee_data):
     c.send("add_D_Cred".encode())
@@ -119,9 +125,9 @@ def write_D_Cred(c, employee_data):
     response = recv_json(c)
     
     if "success" in response:
-        print(f"Employee added with ID {response['Employee_ID']}")
+        return f"Employee added with ID {response['Employee_ID']}"
     else:
-        print(f"Error: {response['error']}")
+        return f"Error: {response['error']}"
 
 def main():
     c = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
